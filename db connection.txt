@@ -1,0 +1,96 @@
+public class Datareader {
+	
+	public static String URL = "";
+	public static String userName="";
+	public static String password = "";
+	public static Connection Conn=null;
+	public static Statement stmt = null;
+	public static String query=null;
+	public static XSSFWorkbook workbook;
+	public static XSSFSheet sheet;
+	public static Row row;
+	public static Cell cell;
+	public static FileOutputStream outputStream;
+	
+	public static void main(String[] args) throws SQLException
+	{
+		File dir = new File(".//");
+		
+		
+		System.out.println("Searching for Oracle JDBC driver...");
+		try {
+			Class.forName("oracle.jdbc.driver.OracleDriver");
+			
+			Conn = DriverManager.getConnection(URL, userName, password);
+		
+
+
+		System.out.println("Database Connection Established..!");
+		
+		stmt = Conn.createStatement();
+		
+		
+		
+		/*
+		 * Create Map for Excel Data // create a map and define data
+		 */
+		Map<String, Object[]> memberfile_data = new HashMap<String, Object[]>();
+
+		ResultSet query_set = stmt.executeQuery("");
+
+		int row_counter = 0;
+		/* Populate data into the Map */
+		while (query_set.next()) {
+
+			row_counter = row_counter + 1;
+			String first_name = query_set.getString(1);
+			String last_name = query_set.getString(2);
+			String medcd_no = query_set.getString(3);
+
+			memberfile_data.put(Integer.toString(row_counter),
+					new Object[] { first_name, last_name, medcd_no });
+
+		}
+
+		System.out.println("New File created now.");
+		workbook = new XSSFWorkbook();
+		sheet = workbook.createSheet("Member_Details");
+		MemberFileReaderWriter.createHeaderRow(sheet);
+
+		/* Load data into logical work sheet */
+		Set<String> keyset = memberfile_data.keySet();
+		int rownum = sheet.getLastRowNum();
+		int rowCount = 0;
+		// loop through the data and add them to the cell
+		for (String key : keyset) {
+			Row row = sheet.createRow(++rowCount);
+			Object[] objArr = memberfile_data.get(key);
+			int columnCount1 = 0;
+			for (Object obj : objArr) {
+				Cell cell = row.createCell(columnCount1++);
+				if (obj instanceof Double) {
+					cell.setCellValue((Double) obj);
+				} else if (obj instanceof String) {
+					cell.setCellValue((String) obj);
+				} else if (obj instanceof Date) {
+					cell.setCellValue((Date) obj);
+				} else if (obj instanceof Integer) {
+					cell.setCellValue((Integer) obj);
+				}
+			}
+		}
+
+		outputStream = new FileOutputStream(dir.getCanonicalFile() + "//Member_Details.xlsx");
+		workbook.write(outputStream);
+
+		workbook.close();
+		outputStream.close();
+
+		
+		} catch (ClassNotFoundException | SQLException | IOException e) {
+			System.out.println("Class not found " + e);
+		}
+		
+	}
+	
+	
